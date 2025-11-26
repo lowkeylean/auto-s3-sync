@@ -1,13 +1,12 @@
-Instagram Comment Likes Leaderboard – Automation Script
+Automation Script
 
-This repository contains a modular Node.js + TypeScript automation script designed to generate a leaderboard of users ranked by the total likes received on their Instagram comments across all posts.
+This repository contains a modular Node.js + TypeScript automation script designed to generate a local folder for new files, automatically uploading them to AWS S3, generating a metadata log for observability, and can be aligned to send a slack notification.
 
 The project is structured for scalability, API integration, and compatibility with a no/low-code workflow using n8n, Google Apps Script, or external CRON triggers.
 
 Key features:
-- Fetches Instagram post data via API or webhooks
-- Aggregates total likes per commenter
-- Generates a ranked leaderboard
+- Fetches data via API or webhooks
+- Aggregates the number of features in data
 - Exports results to JSON, Google Sheets, or a database
 - Fully typed codebase in TypeScript
 
@@ -63,3 +62,6 @@ This project serves as a demonstration of:
 - API integration skill
 - Background in Google workflow automation
 - Clean TypeScript architecture
+
+Contact: Mainak Das
+https://www.linkedin.com/in/mdas21/
