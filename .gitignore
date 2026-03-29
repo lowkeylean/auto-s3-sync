@@ -1,17 +1,15 @@
-# Node modules
-node_modules/
-
-# Build output
-dist/
-
-# Environment variables
+node_modules
+dist
+dist-ssr
+*.local
 .env
-
-# Local logs
-file-log.json
-
-# Mac system files
+.env.*
+!.env.example
 .DS_Store
-
-# Temporary files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+logs
 *.log
