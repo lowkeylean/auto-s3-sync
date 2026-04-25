@@ -1,14 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import { Info, Clock, X, Wrench, FileText, UserPlus, Building2, Warehouse } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
-import { mockUsers } from '../data/mockUsers';
-
-const mockWorkersList = mockUsers.filter(u => u.role === 'worker').map(w => ({
-    id: w.id,
-    name: `${w.name} ${w.employmentType === 'staff' ? '[Staff] ' : ''}(${w.subCategory || 'General'})`
-}));
+import { fetchWorkers, type DbProfile } from '../lib/services/profileService';
 
 export interface PublicAreaData {
     id: string;
@@ -220,6 +215,7 @@ export default function PublicAreaMatrix() {
     const role = profile?.role || 'manager';
     const { addTask } = useTasks();
 
+    const [workers, setWorkers] = useState<DbProfile[]>([]);
     const [selectedArea, setSelectedArea] = useState<PublicAreaData | null>(null);
     const [filterSection, setFilterSection] = useState<'all' | 'front' | 'back'>('all');
     const [filterStatus, setFilterStatus] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
@@ -227,6 +223,8 @@ export default function PublicAreaMatrix() {
     const [assignWorkerId, setAssignWorkerId] = useState('');
     const [assignDate, setAssignDate] = useState('');
     const [isAssigning, setIsAssigning] = useState(false);
+
+    useEffect(() => { fetchWorkers().then(setWorkers).catch(console.error); }, []);
 
     const canAssign = ['admin', 'manager', 'supervisor'].includes(role);
 
@@ -509,7 +507,7 @@ export default function PublicAreaMatrix() {
                                         onChange={e => setAssignWorkerId(e.target.value)}
                                     >
                                         <option value="" disabled>Assign to Worker...</option>
-                                        {mockWorkersList.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        {workers.map(w => ({ id: w.id, name: `${w.full_name ?? 'Unknown'}${w.employment_type === 'staff' ? ' [Staff] ' : ''} (${w.sub_category ?? 'General'})` })).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                     </select>
                                     <input
                                         type="date"

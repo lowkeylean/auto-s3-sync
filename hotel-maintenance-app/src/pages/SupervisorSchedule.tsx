@@ -1,50 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Sidebar from '../components/Sidebar';
+import { fetchWorkers, type DbProfile } from '../lib/services/profileService';
 
-// Mock Data
 const mockEquipmentNeedingService = [
     { id: 'eq-1', name: 'HVAC Unit B', location: 'Roof - South', lastServiced: '2026-01-20', recommendedDueDate: '2026-02-28' },
     { id: 'eq-2', name: 'Pool Pump', location: 'Basement', lastServiced: '2026-01-15', recommendedDueDate: '2026-02-25' },
     { id: 'eq-3', name: 'Commercial Oven', location: 'Kitchen', lastServiced: '2026-01-25', recommendedDueDate: '2026-03-05' },
 ];
 
-import { mockUsers } from '../data/mockUsers';
-
-const mockWorkers = mockUsers.filter(u => u.role === 'worker').map(w => ({
-    id: w.id,
-    name: `${w.name} ${w.employmentType === 'staff' ? '[Staff] ' : ''}(${w.subCategory || 'General'})`
-}));
-
 export default function SupervisorSchedule() {
-    const [assignments, setAssignments] = useState<Record<string, { workerId: string, date: string }>>({});
+    const [workers, setWorkers] = useState<DbProfile[]>([]);
+    const [assignments, setAssignments] = useState<Record<string, { workerId: string; date: string }>>({});
+
+    useEffect(() => {
+        fetchWorkers().then(setWorkers).catch(console.error);
+    }, []);
 
     const handleAssignmentChange = (eqId: string, field: 'workerId' | 'date', value: string) => {
-        setAssignments(prev => ({
-            ...prev,
-            [eqId]: {
-                ...prev[eqId],
-                [field]: value
-            }
-        }));
+        setAssignments(prev => ({ ...prev, [eqId]: { ...prev[eqId], [field]: value } }));
     };
 
     const handleAssignTask = (eqId: string) => {
         const assignment = assignments[eqId];
         if (assignment?.workerId && assignment?.date) {
-            alert(`Task assigned to Worker ${assignment.workerId} on ${assignment.date}`);
-            // In real implementation, we would call the DB and remove from this list or mark assigned
+            const worker = workers.find(w => w.id === assignment.workerId);
+            alert(`Task assigned to ${worker?.full_name ?? 'worker'} on ${assignment.date}`);
         } else {
-            alert("Please select both a worker and a date.");
+            alert('Please select both a worker and a date.');
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex font-sans">
             <Sidebar role="supervisor" />
-
-            {/* Main Content */}
             <main className="flex-1 p-8">
                 <div className="flex justify-between items-center mb-8">
                     <div>
@@ -65,10 +55,8 @@ export default function SupervisorSchedule() {
                     </div>
 
                     <div className="divide-y divide-gray-100">
-                        {mockEquipmentNeedingService.map((eq) => (
+                        {mockEquipmentNeedingService.map(eq => (
                             <div key={eq.id} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 hover:bg-gray-50/50 transition-colors">
-
-                                {/* Equipment Info */}
                                 <div className="flex-1">
                                     <h3 className="text-lg font-bold text-gray-900 mb-1">{eq.name}</h3>
                                     <p className="text-sm text-gray-500 mb-2">{eq.location}</p>
@@ -78,52 +66,37 @@ export default function SupervisorSchedule() {
                                     </div>
                                 </div>
 
-                                {/* Assignment Controls */}
-                                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-
-                                    <div className="w-full sm:w-auto">
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Assign To</label>
-                                        <select
-                                            className="w-full sm:w-48 border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                            value={assignments[eq.id]?.workerId || ''}
-                                            onChange={(e) => handleAssignmentChange(eq.id, 'workerId', e.target.value)}
-                                        >
-                                            <option value="" disabled>Select Worker</option>
-                                            {mockWorkers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div className="w-full sm:w-auto">
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Due Date</label>
-                                        <input
-                                            type="date"
-                                            className="w-full sm:w-40 border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                                            value={assignments[eq.id]?.date || ''}
-                                            onChange={(e) => handleAssignmentChange(eq.id, 'date', e.target.value)}
-                                        />
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleAssignTask(eq.id)}
+                                <div className="flex flex-col sm:flex-row gap-3 lg:w-auto w-full">
+                                    <select
+                                        value={assignments[eq.id]?.workerId ?? ''}
+                                        onChange={e => handleAssignmentChange(eq.id, 'workerId', e.target.value)}
+                                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none min-w-[200px]">
+                                        <option value="" disabled>Select worker...</option>
+                                        {workers.map(w => (
+                                            <option key={w.id} value={w.id}>
+                                                {w.full_name}{w.employment_type === 'staff' ? ' [Staff]' : ''}{w.sub_category ? ` (${w.sub_category})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <input type="date"
+                                        value={assignments[eq.id]?.date ?? ''}
+                                        onChange={e => handleAssignmentChange(eq.id, 'date', e.target.value)}
+                                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                                    <button onClick={() => handleAssignTask(eq.id)}
                                         className={cn(
-                                            "w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors mt-5 sm:mt-0 flex items-center justify-center gap-2",
+                                            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors',
                                             assignments[eq.id]?.workerId && assignments[eq.id]?.date
-                                                ? "bg-blue-600 text-white hover:bg-blue-700"
-                                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                        )}
-                                        disabled={!assignments[eq.id]?.workerId || !assignments[eq.id]?.date}
-                                    >
+                                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        )}>
                                         <UserPlus className="w-4 h-4" />
-                                        Assign Task
+                                        Assign
                                     </button>
-
                                 </div>
                             </div>
                         ))}
                     </div>
-
                 </div>
-
             </main>
         </div>
     );
